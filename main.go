@@ -23,11 +23,16 @@ const windowHeight = 600
 
 func main() {
 
-	_, _, err := obj.LoadOBJ("assets/cube/cube.obj")
+	shapes, _, err := obj.LoadOBJ("assets/cube/cube.obj")
 	if err != nil {
 		panic(err)
 	}
-	return
+
+	if len(shapes) == 0 {
+		panic(fmt.Errorf("No shapes loaded"))
+	}
+
+	shape := shapes[0]
 
 	err = glfw.Init()
 	if err != nil {
@@ -83,22 +88,38 @@ func main() {
 		panic(err)
 	}
 
+	const sizeofFloat = 4
+
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
 
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices)*4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
+	var vertBuf uint32
+	gl.GenBuffers(1, &vertBuf)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vertBuf)
+	gl.BufferData(gl.ARRAY_BUFFER, len(shape.Mesh.Vertices)*sizeofFloat, gl.Ptr(shape.Mesh.Vertices), gl.STATIC_DRAW)
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
-	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 3*sizeofFloat, gl.PtrOffset(0))
 
-	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vertTexCoord\x00")))
-	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	//var normBuf uint32
+	//gl.GenBuffers(1, &normBuf)
+	//gl.BindBuffer(gl.ARRAY_BUFFER, normBuf)
+	//gl.BufferData(gl.ARRAY_BUFFER, len(shape.Mesh.Normals)*sizeofFloat, gl.Ptr(shape.Mesh.Normals), gl.STATIC_DRAW)
+
+	//normAttrib := uint32(gl.GetAttribLocation(program, gl.Str("norm\x00")))
+	//gl.EnableVertexAttribArray(normAttrib)
+	//gl.VertexAttribPointer(normAttrib, 3, gl.FLOAT, false, 3*sizeofFloat, gl.PtrOffset(0))
+
+	//var texCoordBuf uint32
+	//gl.GenBuffers(1, &texCoordBuf)
+	//gl.BindBuffer(gl.ARRAY_BUFFER, texCoordBuf)
+	//gl.BufferData(gl.ARRAY_BUFFER, len(shape.Mesh.TexCoords)*sizeofFloat, gl.Ptr(shape.Mesh.TexCoords), gl.STATIC_DRAW)
+
+	//texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vertTexCoord\x00")))
+	//gl.EnableVertexAttribArray(texCoordAttrib)
+	//gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 2*sizeofFloat, gl.PtrOffset(0))
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
@@ -238,6 +259,7 @@ uniform mat4 projection;
 uniform mat4 camera;
 uniform mat4 model;
 in vec3 vert;
+//in vec3 norm;
 in vec2 vertTexCoord;
 out vec2 fragTexCoord;
 void main() {
@@ -252,57 +274,6 @@ uniform sampler2D tex;
 in vec2 fragTexCoord;
 out vec4 outputColor;
 void main() {
-    outputColor = texture(tex, fragTexCoord);
+    outputColor = vec4(1, 0, 0, 1); //texture(tex, fragTexCoord);
 }
 ` + "\x00"
-
-var cubeVertices = []float32{
-	//  X, Y, Z, U, V
-	// Bottom
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-
-	// Top
-	-1.0, 1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Front
-	-1.0, -1.0, 1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Back
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 1.0,
-
-	// Left
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-
-	// Right
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-}
